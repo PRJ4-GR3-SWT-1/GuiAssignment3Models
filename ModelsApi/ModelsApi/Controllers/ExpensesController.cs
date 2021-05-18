@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
@@ -107,8 +108,23 @@ namespace ModelsApi.Controllers
             {
                 return BadRequest("Data is missing");
             }
+            var role = User.Claims.First(a => a.Type == ClaimTypes.Role).Value;
+            long modelId;
+            if (role == "Manager")
+            {
+                modelId = 8055;
+            }
+            else // Role == Model
+            {
+                var modelStr = User.Claims.First(a => a.Type == "ModelId").Value;
+                
+                if (!long.TryParse(modelStr, out modelId))
+                    return Unauthorized("ModelId missing");
+            }
+
 
             var expense = _mapper.Map<EfExpense>(newExpense);
+            expense.ModelId = modelId;
             _context.Expenses.Add(expense);
             await _context.SaveChangesAsync().ConfigureAwait(false);
 
